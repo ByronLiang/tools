@@ -1,15 +1,25 @@
 package image
 
-import "testing"
+import (
+	"net/http"
+	"testing"
+)
 
-func TestGetImage(t *testing.T) {
-	fileByte, err := GetImage("./sample/tick.JPG")
+func TestDownloadImageHandle(t *testing.T) {
+	http.HandleFunc("/download", downloadImageHandle)
+	err := http.ListenAndServe(":8000", nil)
 	if err != nil {
+		t.Error(err)
+	}
+}
+
+func downloadImageHandle(w http.ResponseWriter, r *http.Request) {
+	fileByte, err := GetImage("./sample/demo.jpg")
+	if err != nil {
+		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
-	exifSize, sum := CalExifSize(fileByte)
-	t.Log(exifSize, sum)
-	_, startIndex, endIndex := GetExif(fileByte)
-	t.Log("len: ", startIndex, endIndex)
-	//t.Log(exifData)
+	// RemoveExif(fileByte)
+	RemoveExifSkipOrientation(fileByte)
+	DownloadImageHandle(w, r, "image.jpg", fileByte)
 }
