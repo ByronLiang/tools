@@ -5,11 +5,12 @@ import (
 	"image"
 	"image/jpeg"
 	"io/ioutil"
-	"log"
 	"mime"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/disintegration/imaging"
 )
 
 func GetImage(filename string) ([]byte, error) {
@@ -20,28 +21,41 @@ func GetImage(filename string) ([]byte, error) {
 	return fileByte, nil
 }
 
-func OutImage() {
-	file, err := os.Open("input.jpg")
+func OutImage(filename, outputFileName string) error {
+	fileByte, err := GetImage(filename)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	defer file.Close()
-
-	img, _, err := image.Decode(file)
+	orientation, err := GetImageOrientation(fileByte)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	outfile, err := os.Create("output.jpg")
+	fileReader := bytes.NewReader(fileByte)
+	img, _, err := image.Decode(fileReader)
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+	if orientation == 3 {
+		img = imaging.Rotate180(img)
+	}
+	if orientation == 6 {
+		img = imaging.Rotate270(img)
+	}
+	if orientation == 8 {
+		img = imaging.Rotate90(img)
+	}
+	outfile, err := os.Create(outputFileName)
+	if err != nil {
+		return err
 	}
 	defer outfile.Close()
-
 	if err := jpeg.Encode(outfile, img, nil); err != nil {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }
 
+// Http 请求下以流形式下载图片封装方法
 func DownloadImageHandle(w http.ResponseWriter, r *http.Request, fileName string, content []byte) {
 	fm := mime.FormatMediaType("attachment", map[string]string{"filename": fileName})
 	w.Header().Set("Content-Disposition", fm)

@@ -3,73 +3,7 @@ package image
 import (
 	"bytes"
 	"encoding/binary"
-
-	jpegstructure "github.com/dsoprea/go-jpeg-image-structure"
 )
-
-func FileEmptyExif(data []byte) ([]byte, []byte, error) {
-	jmp := jpegstructure.NewJpegMediaParser()
-	if jmp.LooksLikeFormat(data) {
-		sl, err := jmp.ParseBytes(data)
-		if err != nil {
-			return data, nil, err
-		}
-		_, rawExif, err := sl.Exif()
-		if err != nil {
-			// 不存在图片exif信息
-			return data, nil, nil
-		}
-		var filtered []byte
-		startExifBytes := 0
-		endExifBytes := 0
-		if bytes.Contains(data, rawExif) {
-			for i := 0; i < len(data)-len(rawExif); i++ {
-				if bytes.Compare(data[i:i+len(rawExif)], rawExif) == 0 {
-					startExifBytes = i
-					endExifBytes = i + len(rawExif)
-					break
-				}
-			}
-			fill := make([]byte, len(data[startExifBytes:endExifBytes]))
-			copy(data[startExifBytes:endExifBytes], fill)
-		}
-		filtered = data
-		return filtered, rawExif, nil
-	}
-	return data, nil, nil
-}
-
-func GetExif(data []byte) ([]byte, int, int) {
-	startExifBytesIndex := 0
-	endExifBytesIndex := 0
-	jmp := jpegstructure.NewJpegMediaParser()
-	if jmp.LooksLikeFormat(data) {
-		sl, err := jmp.ParseBytes(data)
-		if err != nil {
-			return nil, startExifBytesIndex, endExifBytesIndex
-		}
-		_, rawExif, err := sl.Exif()
-		if err != nil {
-			// 不存在图片exif信息
-			return nil, startExifBytesIndex, endExifBytesIndex
-		}
-		if bytes.Contains(data, rawExif) {
-			for i := 0; i < len(data)-len(rawExif); i++ {
-				if bytes.Compare(data[i:i+len(rawExif)], rawExif) == 0 {
-					startExifBytesIndex = i
-					endExifBytesIndex = i + len(rawExif)
-					break
-				}
-			}
-		}
-		return rawExif, startExifBytesIndex, endExifBytesIndex
-	}
-	return nil, startExifBytesIndex, endExifBytesIndex
-}
-
-func bytesToInt16(b []byte) uint16 {
-	return binary.BigEndian.Uint16(b)
-}
 
 func CalExifSize(data []byte) (int, int) {
 	exifSize := 0
@@ -93,8 +27,15 @@ func CalExifSize(data []byte) (int, int) {
 	return exifSize, sum
 }
 
-func GetExifData(data []byte, isOnlyContent bool) []byte {
+func bytesToInt16(b []byte) uint16 {
+	return binary.BigEndian.Uint16(b)
+}
+
+func GetExifData(data []byte, isOnlyContent bool) ([]byte, bool) {
 	exifSize, sumSize := CalExifSize(data)
+	if exifSize == 0 || sumSize == 0 {
+		return nil, false
+	}
 	startIndex := sumSize - exifSize
 	// 只提取exif 内容
 	if isOnlyContent {
@@ -104,7 +45,7 @@ func GetExifData(data []byte, isOnlyContent bool) []byte {
 	// 从源数据拷贝exif数据
 	exifData := make([]byte, exifSize)
 	copy(exifData, data[startIndex:sumSize])
-	return exifData
+	return exifData, true
 }
 
 func RemoveExif(data []byte) {
@@ -121,6 +62,9 @@ func RemoveExif(data []byte) {
 
 func RemoveExifSkipOrientation(data []byte) {
 	exifSize, sumSize := CalExifSize(data)
+	if exifSize == 0 || sumSize == 0 {
+		return
+	}
 	// EXIF IFD 标签起始字节下标
 	startIndex := sumSize - exifSize + 6
 	// 覆盖exif 数据
@@ -136,4 +80,25 @@ func RemoveExifSkipOrientation(data []byte) {
 	//copy(fill[10:22], data[startIndex+34:startIndex+46])
 	copy(data[startIndex:sumSize], fill)
 	return
+}
+
+func GetImageOrientation(fileByte []byte) (int, error) {
+	exifData, isExistExif := GetExifData(fileByte, true)
+	if !isExistExif {
+		return 0, nil
+	}
+	exifFile := bytes.NewReader(exifData)
+	// 获取指定 IFD 标签值
+	tag, err := GetDefineTag(exifFile, Orientation)
+	if err != nil {
+		return 0, err
+	}
+	if tag != nil {
+		tagVal, err := tag.Int(0)
+		if err != nil {
+			return 0, err
+		}
+		return tagVal, nil
+	}
+	return 0, nil
 }

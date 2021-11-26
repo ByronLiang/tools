@@ -14,10 +14,6 @@ func TestGetImage(t *testing.T) {
 	}
 	exifSize, sum := CalExifSize(fileByte)
 	t.Log(exifSize, sum)
-
-	_, startIndex, endIndex := GetExif(fileByte)
-	t.Log("len: ", startIndex, endIndex)
-	//t.Log(exifData)
 }
 
 func TestDecode(t *testing.T) {
@@ -25,21 +21,16 @@ func TestDecode(t *testing.T) {
 	if err != nil {
 		return
 	}
-	exifData := GetExifData(fileByte, true)
-	exifFile := bytes.NewReader(exifData)
-	tiffGroup, err := tiff.Decode(exifFile)
-	t.Log(tiffGroup.String())
-	//tags, err := Decode(exifFile)
-	//if err != nil {
-	//	t.Fatal(err)
-	//	return
-	//}
-	//tag, err := tags.Get(Orientation)
-	//if err != nil || tag == nil {
-	//	t.Fatal(err)
-	//	return
-	//}
-	//t.Log(tag.String())
+	exifData, existExif := GetExifData(fileByte, true)
+	if existExif {
+		exifFile := bytes.NewReader(exifData)
+		tiffGroup, err := tiff.Decode(exifFile)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		t.Log(tiffGroup.String())
+	}
 }
 
 func TestGetDefineTag(t *testing.T) {
@@ -47,7 +38,10 @@ func TestGetDefineTag(t *testing.T) {
 	if err != nil {
 		return
 	}
-	exifData := GetExifData(fileByte, true)
+	exifData, isExistExif := GetExifData(fileByte, true)
+	if !isExistExif {
+		return
+	}
 	exifFile := bytes.NewReader(exifData)
 	// 获取指定 IFD 标签值
 	tag, err := GetDefineTag(exifFile, Orientation)
@@ -55,5 +49,20 @@ func TestGetDefineTag(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	t.Log("tag: ", tag.String())
+	if tag != nil {
+		t.Log("val: ", tag.String())
+	}
+}
+
+func TestGetImageOrientation(t *testing.T) {
+	fileByte, err := GetImage("./sample/demo.jpg")
+	if err != nil {
+		return
+	}
+	tagVal, err := GetImageOrientation(fileByte)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Log("tagVal: ", tagVal)
 }

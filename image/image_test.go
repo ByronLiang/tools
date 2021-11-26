@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+func TestOutImage(t *testing.T) {
+	OutImage("./sample/demo.jpg", "./sample/output.jpg")
+}
+
 func TestDownloadImageHandle(t *testing.T) {
 	http.HandleFunc("/download", downloadImageHandle)
 	err := http.ListenAndServe(":8000", nil)

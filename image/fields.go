@@ -150,6 +150,7 @@ var fieldSet = map[FieldName]uint16{
 	Orientation: 0x0112,
 	ImageWidth:  0x0100,
 	ImageLength: 0x0101,
+	Compression: 0x0103,
 }
 
 var exifFields = map[uint16]FieldName{
