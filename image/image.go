@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"image"
 	"image/jpeg"
+	"io"
 	"io/ioutil"
 	"mime"
 	"net/http"
@@ -19,6 +20,18 @@ func GetImage(filename string) ([]byte, error) {
 		return nil, err
 	}
 	return fileByte, nil
+}
+
+func GetImageInfo(imageReader *bytes.Reader) (int, int, string, error) {
+	_, err := imageReader.Seek(0, io.SeekStart)
+	if err != nil {
+		return 0, 0, "", err
+	}
+	c, format, err := image.DecodeConfig(imageReader)
+	if err != nil {
+		return 0, 0, "", err
+	}
+	return c.Width, c.Height, format, nil
 }
 
 func OutImage(filename, outputFileName string) error {

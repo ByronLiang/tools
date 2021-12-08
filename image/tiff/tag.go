@@ -226,8 +226,6 @@ func DecodeDefineTagData(r ReadAtReader, order binary.ByteOrder, fieldId uint16)
 			return t, ErrShortReadTagValue
 		}
 		t.Val = buff.Bytes()
-		fmt.Println("offset: ", int64(t.ValOffset), t.Val)
-
 	} else {
 		// 默认读取4bit
 		val := make([]byte, valLen)
