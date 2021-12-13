@@ -7,11 +7,11 @@ import (
 )
 
 type GroupHandle interface {
-	SetBuffer(buffer *Buffer)
+	SetBuffer(buffer *Buffer) // 缓冲对象设置
 	GetBuffer() *Buffer
-	GetConsumeFrequency() int
-	ConsumeBufferHandle(data interface{})
-	InitConsumerGroup(ctx context.Context) error
+	GetConsumeFrequency() int                    // 配置缓冲区消费频率
+	ConsumeBufferHandle(data interface{})        // 消费缓冲区数据业务实现
+	InitConsumerGroup(ctx context.Context) error // 初始化消费组
 }
 
 func DefaultConsumerHandle(buffer *Buffer) error {
@@ -40,7 +40,7 @@ func DefaultConsumerHandle(buffer *Buffer) error {
 					break loadData
 				}
 			}
-		case initConsumerGroupErr := <-initConsumerGroupErrChan:
+		case initConsumerGroupErr := <-initConsumerGroupErrChan: // 消费组初始化异常
 			ticker.Stop()
 			close(initConsumerGroupErrChan)
 			return initConsumerGroupErr

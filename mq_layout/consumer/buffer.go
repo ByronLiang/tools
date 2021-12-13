@@ -13,8 +13,6 @@ type Buffer struct {
 
 type BufferHandle func(buffer *Buffer) error
 
-type ConsumeHandle func(buffer *Buffer, data interface{})
-
 func NewBuffer(topic, groupId string, size int, handle BufferHandle) *Buffer {
 	buffer := &Buffer{
 		Topic:    topic,
