@@ -1,25 +1,41 @@
 package consumer
 
 type Buffer struct {
-	Topic  string
-	Data   chan interface{}
-	Size   int
-	isStop bool
-	close  chan struct{}
+	Topic       string
+	GroupId     string
+	Data        chan interface{}
+	Size        int
+	isStop      bool
+	CloseSig    chan struct{}
+	handle      BufferHandle
+	groupHandle GroupHandle
 }
 
-type BufferHandle func(buffer *Buffer)
+type BufferHandle func(buffer *Buffer) error
 
-func NewBuffer(topic string, size int, handle BufferHandle) *Buffer {
+type ConsumeHandle func(buffer *Buffer, data interface{})
+
+func NewBuffer(topic, groupId string, size int, handle BufferHandle) *Buffer {
 	buffer := &Buffer{
-		Topic: topic,
-		Data:  make(chan interface{}, size),
-		Size:  size,
-		close: make(chan struct{}, 1),
+		Topic:    topic,
+		GroupId:  groupId,
+		Data:     make(chan interface{}, size),
+		Size:     size,
+		CloseSig: make(chan struct{}, 1),
+		handle:   handle,
 	}
-	go func(buffer *Buffer) {
-		handle(buffer)
-	}(buffer)
+	return buffer
+}
+
+func NewGroupBuffer(topic, groupId string, size int, groupHandle GroupHandle) *Buffer {
+	buffer := &Buffer{
+		Topic:       topic,
+		GroupId:     groupId,
+		Data:        make(chan interface{}, size),
+		Size:        size,
+		CloseSig:    make(chan struct{}, 1),
+		groupHandle: groupHandle,
+	}
 	return buffer
 }
 
@@ -48,9 +64,20 @@ func (b *Buffer) GetAllData() []interface{} {
 	return res
 }
 
+func (b *Buffer) IsStop() bool {
+	return b.isStop
+}
+
+func (b *Buffer) SetStop() {
+	b.isStop = true
+}
+
 func (b *Buffer) Close() bool {
+	if b.IsStop() {
+		return true
+	}
 	select {
-	case b.close <- struct{}{}:
+	case b.CloseSig <- struct{}{}:
 		b.isStop = true
 		return true
 	default:
