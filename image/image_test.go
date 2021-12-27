@@ -41,5 +41,5 @@ func downloadImageHandle(w http.ResponseWriter, r *http.Request) {
 	}
 	// RemoveExif(fileByte)
 	RemoveExifSkipOrientation(fileByte)
-	DownloadImageHandle(w, r, "image.jpg", fileByte)
+	DownloadImageHandle(w, r, "我是图片.jpg", fileByte)
 }

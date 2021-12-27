@@ -2,12 +2,13 @@ package image
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"io"
 	"io/ioutil"
-	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -70,7 +71,10 @@ func OutImage(filename, outputFileName string) error {
 
 // Http 请求下以流形式下载图片封装方法
 func DownloadImageHandle(w http.ResponseWriter, r *http.Request, fileName string, content []byte) {
-	fm := mime.FormatMediaType("attachment", map[string]string{"filename": fileName})
+	// 待定
+	//fm := mime.FormatMediaType("attachment", map[string]string{"filename": fileName})
+	// 解决中文乱码
+	fm := fmt.Sprintf("attachment; filename*=utf-8''%s", url.QueryEscape(fileName))
 	w.Header().Set("Content-Disposition", fm)
 	w.Header().Set("Content-Type", "application/octet-stream")
 	http.ServeContent(w, r, fileName, time.Now(), bytes.NewReader(content))
