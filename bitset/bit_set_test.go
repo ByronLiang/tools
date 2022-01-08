@@ -2,9 +2,10 @@ package bitset
 
 import "testing"
 
-const DefaultBit BitUnit = iota
+// uint8 没符号整型, 满足8个数位进行赋值 而int8 是有符号整型, 只支持七位数值
+const DefaultBit = BitUnit(0)
 
-// BitUnit是八位，只能支持7个bit位配置, 其中一位是符号位
+// BitUnit是八位，最多偏移7个bit, 至多支持七个选项的配置
 const (
 	ConfA BitUnit = 1 << iota
 	ConfB
@@ -41,7 +42,7 @@ func TestAddBit(t *testing.T) {
 
 func TestBitString(t *testing.T) {
 	// 因溢出而报错
-	const OverConf = 1 << 6
+	const OverConf = 1 << 8
 	nowBit := AddBit(DefaultBit, OverConf)
 	t.Log(BitString(nowBit), nowBit)
 }
