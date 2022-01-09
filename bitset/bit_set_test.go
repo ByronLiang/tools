@@ -42,7 +42,8 @@ func TestAddBit(t *testing.T) {
 
 func TestBitString(t *testing.T) {
 	// 因溢出而报错
-	const OverConf = 1 << 8
-	nowBit := AddBit(DefaultBit, OverConf)
+	//const OverConf = 1 << 8
+	cfg := BitUnit(1 << 7)
+	nowBit := AddBit(DefaultBit, cfg)
 	t.Log(BitString(nowBit), nowBit)
 }

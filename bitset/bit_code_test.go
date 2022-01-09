@@ -24,7 +24,7 @@ func TestBitCodeGroup_Add(t *testing.T) {
 	}
 }
 
-func TestBitCodeGroup_GenerateCode(t *testing.T) {
+func TestBitCodeGroup_GenerateCodeErr(t *testing.T) {
 	bcg := NewBitCodeGroup()
 	elem := testBuildBitCodeElement()
 	err := bcg.Add("bit-element-over-err", elem...)
@@ -67,7 +67,7 @@ func TestNewBitCodeGroup(t *testing.T) {
 		codeList[code] = data
 	}
 	fmt.Println(codeList)
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	for code, _ := range codeList {
 		res, err := bcg.ParseAll("orderNo", code)
 		if err != nil {
@@ -75,15 +75,44 @@ func TestNewBitCodeGroup(t *testing.T) {
 			break
 		}
 		fmt.Println(res)
-		defineSet := map[string]uint64{
-			"countryNo": uint64(0),
-			"shopNo":    uint64(0),
-		}
-		err = bcg.Parse("orderNo", code, defineSet)
+		parseMap, err := bcg.Parse("orderNo", code, "countryNo", "shopNo")
 		if err != nil {
 			t.Error(err)
 		} else {
-			fmt.Println("defineSet", defineSet)
+			fmt.Println("parseMap", parseMap)
 		}
 	}
+}
+
+func TestBitCodeGroup_Delete(t *testing.T) {
+	bcg := NewBitCodeGroup()
+	elem := testBuildBitCodeElement()
+	err := bcg.Add("orderNo", elem...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	elem2 := testBuildBitCodeElement()
+	err = bcg.Add("paperNo", elem2...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = bcg.Delete("orderNo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := map[string]uint64{
+		"shopNo":    uint64(1),
+		"countryNo": uint64(2),
+		"timestamp": uint64(time.Now().Unix()),
+	}
+	code, err := bcg.GenerateCode("paperNo", data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(code)
+	code, err = bcg.GenerateCode("orderNo", data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(code)
 }

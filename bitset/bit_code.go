@@ -6,6 +6,10 @@ import (
 	"sync"
 )
 
+// 最大随机码可存储数据位数63
+// 若存储64位, 则将uint64 转化为 int64 会丢失最高位的数据 int64 需要有一个数位是符号位
+const MaxBitLen = 63
+
 var (
 	OverBitLenErr     = errors.New("over max bit len 63")
 	GroupKeyNoFindErr = errors.New("key no exist")
@@ -14,8 +18,8 @@ var (
 type bitCodeElement struct {
 	Key        string `json:"key"`
 	BitLen     int    `json:"bit_len"`
-	bitPos     uint64 `json:"-"`
-	restBitPos uint64 `json:"-"`
+	bitPos     uint64 `json:"-"` // 当前元素字节位置
+	restBitPos uint64 `json:"-"` // 剩余元素字节位数
 }
 
 type BitCodeConfig struct {
@@ -33,7 +37,7 @@ func NewBitCodeGroup() *BitCodeGroup {
 	return &BitCodeGroup{
 		mu:     sync.RWMutex{},
 		group:  make(map[string]*BitCodeConfig),
-		bitLen: 63,
+		bitLen: MaxBitLen,
 	}
 }
 
@@ -61,6 +65,18 @@ func (bcg *BitCodeGroup) Add(groupKey string, elements ...*bitCodeElement) error
 	return nil
 }
 
+func (bcg *BitCodeGroup) Delete(groupKey string) error {
+	bcg.mu.Lock()
+	defer bcg.mu.Unlock()
+	_, ok := bcg.group[groupKey]
+	if !ok {
+		return GroupKeyNoFindErr
+	}
+	delete(bcg.group, groupKey)
+	return nil
+}
+
+// 按照元素生成随机码
 func (bcg *BitCodeGroup) GenerateCode(groupKey string, elements map[string]uint64) (uint64, error) {
 	bcg.mu.RLock()
 	defer bcg.mu.RUnlock()
@@ -86,23 +102,26 @@ func (bcg *BitCodeGroup) GenerateCode(groupKey string, elements map[string]uint6
 	return code, nil
 }
 
-func (bcg *BitCodeGroup) Parse(groupKey string, code uint64, elements map[string]uint64) error {
+// 从随机号解析指定参数
+func (bcg *BitCodeGroup) Parse(groupKey string, code uint64, elements ...string) (map[string]uint64, error) {
 	bcg.mu.RLock()
 	defer bcg.mu.RUnlock()
 	bitCodeCfg, ok := bcg.group[groupKey]
 	if !ok {
-		return GroupKeyNoFindErr
+		return nil, GroupKeyNoFindErr
 	}
-	for key := range elements {
+	res := make(map[string]uint64, len(elements))
+	for _, key := range elements {
 		i, ok := bitCodeCfg.ByKey[key]
 		if !ok {
-			return fmt.Errorf("elements key: %s no exist", key)
+			continue
 		}
-		elements[key] = code & bitCodeCfg.Elements[i].bitPos >> bitCodeCfg.Elements[i].restBitPos
+		res[key] = code & bitCodeCfg.Elements[i].bitPos >> bitCodeCfg.Elements[i].restBitPos
 	}
-	return nil
+	return res, nil
 }
 
+// 解析随机号全部参数
 func (bcg *BitCodeGroup) ParseAll(groupKey string, code uint64) (map[string]uint64, error) {
 	bcg.mu.RLock()
 	defer bcg.mu.RUnlock()
