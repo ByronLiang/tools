@@ -1,0 +1,13 @@
+deviceId string
+network int
+deviceType int
+imei string
+idfa string
+oaid string
+brand string
+model string
+os string
+osVersion string
+carrier int
+mac string
+ip string
