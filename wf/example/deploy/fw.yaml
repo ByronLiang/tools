@@ -1,0 +1,33 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: fw-stable
+  namespace: platform
+  labels:
+    app: fw
+    version: stable
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fw
+      version: stable
+  template:
+    metadata:
+      labels:
+        app: fw
+        version: stable
+        cm: stable
+    spec:
+      containers:
+        - name: fw
+          image: docker.io/platform/fw:v1.0.0
+          volumeMounts:
+            - name: config-volume
+              mountPath: /data/fs
+          imagePullPolicy: Never
+      dnsPolicy: ClusterFirst
+      volumes:
+        - name: config-volume
+          hostPath:
+            path: /data/fs
