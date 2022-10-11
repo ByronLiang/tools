@@ -17,17 +17,16 @@ spec:
       labels:
         app: fw
         version: stable
-        cm: stable
     spec:
       containers:
         - name: fw
           image: docker.io/platform/fw:v1.0.0
           volumeMounts:
-            - name: config-volume
+            - name: fs-volume
               mountPath: /data/fs
           imagePullPolicy: Never
       dnsPolicy: ClusterFirst
       volumes:
-        - name: config-volume
+        - name: fs-volume
           hostPath:
             path: /data/fs

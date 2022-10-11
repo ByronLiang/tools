@@ -26,7 +26,7 @@ func main() {
 	if err != nil {
 		return
 	}
-	autoFileModifyCheck, err := wf.InitAutoFileModify(tickerFile, 60*60)
+	autoFileModifyCheck, err := wf.InitAutoFileModify(tickerFile, 20)
 	if err != nil {
 		return
 	}
@@ -43,6 +43,6 @@ func main() {
 	case <-c:
 		log.Println("total", watchFile.GetCounter())
 		log.Println("end-watch")
-		time.Sleep(1 * time.Second)
 	}
+	time.Sleep(1 * time.Second)
 }

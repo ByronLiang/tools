@@ -7,12 +7,12 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-type WfHandle func(op fsnotify.Event)
+type Handle func(op fsnotify.Event)
 
 type Wf struct {
 	watcher       *fsnotify.Watcher
 	heartbeat     HeartBeatCheck
-	handle        WfHandle
+	handle        Handle
 	modifyCounter int
 }
 
@@ -38,32 +38,18 @@ func (w *Wf) AddFile(name string) error {
 
 // set heartbeat to check file watch
 func (w *Wf) SetHeartBeat(beat HeartBeatCheck) error {
-	err := w.watcher.Add(GetWatchTarget())
+	err := w.watcher.Add(beat.GetWatchTarget())
 	if err != nil {
 		return err
 	}
 	w.heartbeat = beat
-	go CheckHandle()
+	go w.heartbeat.CheckHandle()
 	return nil
 }
 
-func (w *Wf) SetWfHandle(handle WfHandle) {
+func (w *Wf) SetWfHandle(handle Handle) {
 	w.handle = handle
 }
-
-//func (w *Wf) SetTicker(tickerFile string) error {
-//    err := w.watcher.Add(tickerFile)
-//    if  err != nil {
-//        return err
-//    }
-//    w.tickerFile = tickerFile
-//    w.lastGetCheckNotifyTime = time.Now()
-//    go func() {
-//        tickerRecreateFile(w.tickerFile, 10 * time.Second)
-//        tickerRecreateFile(w.tickerFile, 30 * time.Second)
-//    }()
-//    return nil
-//}
 
 func (w *Wf) ToWatch() {
 	if w.heartbeat == nil {
@@ -87,16 +73,15 @@ func (w *Wf) watchWithoutHeartBeat() {
 }
 
 func (w *Wf) watch() {
-	checkNotifyTick := time.Tick(time.Duration(120+GetDuration()) * time.Second)
+	checkNotifyTick := time.Tick(time.Duration(120+w.heartbeat.GetDuration()) * time.Second)
 	for {
 		select {
 		case <-checkNotifyTick:
-			BeatProbe()
+			w.heartbeat.BeatProbe()
 		case event := <-w.watcher.Events:
 			w.modifyCounter++
-			if event.Name == GetHeartBeatFile() {
-				BeatCallBack()
-				log.Println("event:", event, event.Op)
+			if event.Name == w.heartbeat.GetHeartBeatFile() {
+				w.heartbeat.BeatCallBack()
 			} else {
 				// none heartbeat event
 				w.handle(event)
@@ -106,32 +91,6 @@ func (w *Wf) watch() {
 		}
 	}
 }
-
-//func (w *Wf) WatchHandle() {
-//    go func() {
-//        checkNotifyTick := time.Tick(20 * time.Second)
-//        for {
-//            select {
-//            case <-checkNotifyTick:
-//                if w.lastGetCheckNotifyTime.Add(20 * time.Second).Before(time.Now()) {
-//                    log.Println("lost event reset again")
-//                }
-//            case event := <-w.watcher.Events:
-//                //log.Println("event:", event, event.Op)
-//                if event.Op&(fsnotify.Write|fsnotify.Create) != 0 {
-//                    if event.Name == w.tickerFile {
-//                        //log.Println("tickerFile catch")
-//                        w.lastGetCheckNotifyTime = time.Now()
-//                    }
-//                    //log.Println("modified file:", event.Name)
-//                    w.modifyCounter++
-//                }
-//            case err := <-w.watcher.Errors:
-//                log.Println("error:", err)
-//            }
-//        }
-//    }()
-//}
 
 func (w *Wf) GetCounter() int {
 	return w.modifyCounter

@@ -2,12 +2,11 @@ package wf
 
 import (
 	"errors"
-	"log"
 	"os"
 	"path/filepath"
 )
 
-var ErrFilePathIsDir = errors.New("filepath is dir")
+var ErrFileNameIsDir = errors.New("filename is dir")
 
 func fileExists(filename string) (bool, error) {
 	info, err := os.Stat(filename)
@@ -15,7 +14,7 @@ func fileExists(filename string) (bool, error) {
 		return false, nil
 	}
 	if info.IsDir() {
-		return false, ErrFilePathIsDir
+		return false, ErrFileNameIsDir
 	}
 	return true, nil
 }
@@ -59,11 +58,10 @@ func GenWatchPath(dir string, filename string) (string, error) {
 
 func recreateFile(file string) error {
 	if err := os.Remove(file); err != nil {
-		log.Println("remove-file err", err.Error())
+		return err
 	}
 	f, err := os.Create(file)
 	if err != nil {
-		log.Println("recreateFile err")
 		return err
 	}
 	return f.Close()
