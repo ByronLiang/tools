@@ -2,6 +2,7 @@ package wf
 
 import (
 	"errors"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -65,4 +66,33 @@ func recreateFile(file string) error {
 		return err
 	}
 	return f.Close()
+}
+
+func BuildTempFile(prefix string) (string, error) {
+	// temp file
+	fObj, err := ioutil.TempFile("", prefix)
+	if err != nil {
+		return "", err
+	}
+	tempFileName := fObj.Name()
+	fObj.Close()
+	return tempFileName, nil
+}
+
+func BuildTempDirAndFile(dir string, filename string, total int) (fileDir string, filenameList []string, err error) {
+	fileDir, err = ioutil.TempDir("", dir)
+	if err != nil {
+		return
+	}
+	filenameList = make([]string, 0, total)
+	var fileObj *os.File
+	for i := 0; i < total; i++ {
+		fileObj, err = ioutil.TempFile(fileDir, filename)
+		if err != nil {
+			continue
+		}
+		filenameList = append(filenameList, fileObj.Name())
+		fileObj.Close()
+	}
+	return
 }
