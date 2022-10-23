@@ -24,6 +24,8 @@ inotify 只能监听文件系统的事件信号。 epoll 可以监听任何信�
 
 ### k8s 挂载文件路径与非挂载路径心跳监测差异
 
+使用 hostpath、EmptyDir 类型的共享卷，会将路径挂载到容器操作系统，能调用 Linux 的文件系统相关接口
+
 ### inotify 监听数量控制
 
 避免引发系统内核异常: inotify watch limit reached
@@ -43,6 +45,16 @@ find /proc/*/fd \
 | sort -n -t: -k2 -r
 ```
 
+## 选型
 
+### Polling 轮询
 
+1. 减少 inotify 数量, 若需监听大量文件，需要考虑扩大 Linux inotify 最大数量
 
+2. 需要调用系统方法: `stat` 获取监听文件信息, 并且对比文件的更改时间, 保存监听文件的基本文件信息
+
+### inotify 与 epoll 组合
+
+1. 保证实时性。应用层只需监听一个被绑定多个 inotify 信号的 epoll 事件信号，即可接收多个 inotify 文件信号。
+
+2. 减小对文件遍历与识别文件是否被更新能行为, 只需对信号做识别

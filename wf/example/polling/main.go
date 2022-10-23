@@ -25,7 +25,7 @@ func main() {
 		return
 	}
 	// polling dir
-	err = polling.Add("/tmp/polling_dir")
+	err = polling.Add("/tmp/dir_polling")
 	if err != nil {
 		log.Println("polling-add", err)
 		return
@@ -34,6 +34,7 @@ func main() {
 		for {
 			select {
 			case event := <-polling.Event:
+				// only monitor write and create operation
 				if event.Op&(wf.Write|wf.Create) != 0 {
 					log.Println("event:", event, event.Op)
 				}
