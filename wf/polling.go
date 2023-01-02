@@ -73,10 +73,13 @@ func (w *Watcher) isClosed() bool {
 }
 
 func (w *Watcher) Close() {
+	w.mu.Lock()
 	if w.isClosed() {
+		w.mu.Unlock()
 		return
 	}
 	close(w.closed)
+	w.mu.Unlock()
 	// readEvent goroutine close
 	<-w.done
 	return
