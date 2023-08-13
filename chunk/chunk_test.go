@@ -1,4 +1,4 @@
-package material
+package chunk
 
 import "testing"
 
